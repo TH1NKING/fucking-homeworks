@@ -156,7 +156,6 @@ void deleteRentalInfo() {
 
 // 统计函数
 void statistics() {
-    // 这里只是展示一些简单的示例统计函数，你可以根据需要进行扩展
     double totalAmount = 0;
     for (const auto& info : rentalList) {
         totalAmount += info.fee;
