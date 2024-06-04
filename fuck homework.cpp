@@ -3,6 +3,7 @@
 #include <string>
 #include <algorithm>
 #include <iomanip>
+#include <unordered_map>
 #include <cctype>
 
 using namespace std;
@@ -14,7 +15,15 @@ struct RentalInfo {
     double fee;
 };
 
-vector<RentalInfo> rentalList;
+struct User {
+    string username;
+    string password;
+    string idNumber;
+    string key;
+};
+
+unordered_map<string, User> users; // 用户信息表
+vector<RentalInfo> rentalList; // 租赁信息表
 
 // 检查身份证号是否为18位
 bool isValidIdNumber(const string& idNumber) {
@@ -162,47 +171,198 @@ void statistics() {
     }
 }
 
-int main() {
-    int choice;
+// 注册用户
+void registerUser() {
+    User user;
+    cout << "请输入用户名: ";
+    cin >> user.username;
+    cout << "请输入密码: ";
+    cin >> user.password;
+    
     while (true) {
-        cout << "1. 录入租赁信息\n";
-        cout << "2. 显示租赁信息\n";
-        cout << "3. 查询单条租赁信息\n";
-        cout << "4. 查询每辆车的租赁费用\n";
-        cout << "5. 添加租赁信息\n";
-        cout << "6. 修改租赁信息\n";
-        cout << "7. 删除租赁信息\n";
-        cout << "8. 统计信息\n";
-        cout << "9. 退出\n";
+        cout << "请输入身份证号(18位): ";
+        cin >> user.idNumber;
+        if (isValidIdNumber(user.idNumber)) break;
+        else cout << "身份证号必须为18位，请重新输入。" << endl;
+    }
+    
+    while (true) {
+        cout << "请输入不少于八位的密钥: ";
+        cin >> user.key;
+        if (user.key.length() >= 8) break;
+        else cout << "密钥长度必须不少于八位，请重新输入。" << endl;
+    }
+    
+    users[user.username] = user;
+    cout << "注册成功！" << endl;
+}
+
+// 用户登录
+bool loginUser(User& loggedInUser) {
+    string username, password;
+    cout << "请输入用户名: ";
+    cin >> username;
+    cout << "请输入密码: ";
+    cin >> password;
+    
+    if (users.find(username) != users.end() && users[username].password == password) {
+        loggedInUser = users[username];
+        return true;
+    }
+    
+    cout << "用户名或密码错误！" << endl;
+    return false;
+}
+
+// 重置密码
+void resetPassword() {
+    string username, idNumber, key;
+    cout << "请输入用户名: ";
+    cin >> username;
+    if (users.find(username) == users.end()) {
+        cout << "用户名不存在！" << endl;
+        return;
+    }
+    
+    cout << "请输入身份证号: ";
+    cin >> idNumber;
+    cout << "请输入密钥: ";
+    cin >> key;
+    
+    if (users[username].idNumber == idNumber && users[username].key == key) {
+        cout << "请输入新密码: ";
+        cin >> users[username].password;
+        cout << "密码重置成功！" << endl;
+    } else {
+        cout << "身份证号或密钥错误！" << endl;
+    }
+}
+
+// 管理员登录
+bool loginAdmin() {
+    string adminUsername = "112233";
+    string adminPassword = "112233";
+    string username, password;
+    
+    cout << "请输入管理员账号: ";
+    cin >> username;
+    cout << "请输入管理员密码: ";
+    cin >> password;
+    
+    if (username == adminUsername && password == adminPassword) {
+        return true;
+    }
+    
+    cout << "管理员账号或密码错误！" << endl;
+    return false;
+}
+
+void userMenu() {
+    User loggedInUser;
+    while (true) {
+        int choice;
+        cout << "1. 用户登录\n";
+        cout << "2. 用户注册\n";
+        cout << "3. 重置密码\n";
+        cout << "4. 返回主菜单\n";
         cout << "请选择功能: ";
         cin >> choice;
-
+        
         switch (choice) {
             case 1:
-                inputRentalInfo();
+                if (loginUser(loggedInUser)) {
+                    while (true) {
+                        cout << "1. 查询单条租赁信息\n";
+                        cout << "2. 查询每辆车的租赁费用\n";
+                        cout << "3. 返回\n";
+                        cout << "请选择功能: ";
+                        cin >> choice;
+                        
+                        if (choice == 1) {
+                            queryRentalById();
+                        } else if (choice == 2) {
+                            queryTotalFeeByLicensePlate();
+                        } else if (choice == 3) {
+                            break;
+                        } else {
+                            cout << "无效选项，请重新选择" << endl;
+                        }
+                    }
+                }
                 break;
             case 2:
-                displayRentalInfo();
+                registerUser();
                 break;
             case 3:
-                queryRentalById();
+                resetPassword();
                 break;
             case 4:
-                queryTotalFeeByLicensePlate();
+                return;
+            default:
+                cout << "无效选项，请重新选择" << endl;
+        }
+    }
+}
+
+void adminMenu() {
+    if (loginAdmin()) {
+        while (true) {
+            int choice;
+            cout << "1. 录入租赁信息\n";
+            cout << "2. 显示租赁信息\n";
+            cout << "3. 添加租赁信息\n";
+            cout << "4. 修改租赁信息\n";
+            cout << "5. 删除租赁信息\n";
+            cout << "6. 统计信息\n";
+            cout << "7. 返回主菜单\n";
+            cout << "请选择功能: ";
+            cin >> choice;
+            
+            switch (choice) {
+                case 1:
+                    inputRentalInfo();
+                    break;
+                case 2:
+                    displayRentalInfo();
+                    break;
+                case 3:
+                    addRentalInfo();
+                    break;
+                case 4:
+                    modifyRentalInfo();
+                    break;
+                case 5:
+                    deleteRentalInfo();
+                    break;
+                case 6:
+                    statistics();
+                    break;
+                case 7:
+                    return;
+                default:
+                    cout << "无效选项，请重新选择" << endl;
+            }
+        }
+    }
+}
+
+int main() {
+    while (true) {
+        int choice;
+        cout << "1. 用户端\n";
+        cout << "2. 管理端\n";
+        cout << "3. 退出\n";
+        cout << "请选择功能: ";
+        cin >> choice;
+        
+        switch (choice) {
+            case 1:
+                userMenu();
                 break;
-            case 5:
-                addRentalInfo();
+            case 2:
+                adminMenu();
                 break;
-            case 6:
-                modifyRentalInfo();
-                break;
-            case 7:
-                deleteRentalInfo();
-                break;
-            case 8:
-                statistics();
-                break;
-            case 9:
+            case 3:
                 return 0;
             default:
                 cout << "无效选项，请重新选择" << endl;
